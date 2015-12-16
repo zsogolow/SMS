@@ -14,7 +14,7 @@ public abstract class BaseSMSReceiver extends BroadcastReceiver {
     /**
      * Tag for identify class in Log
      */
-    private static final String TAG = "SMSReceiver";
+    private static final String TAG = "BaseSMSReceiver";
 
     /**
      * Broadcast action for received SMS

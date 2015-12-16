@@ -23,6 +23,7 @@ public class SMSDbHelper extends SQLiteOpenHelper {
     public static final String SMS_COLUMN_FROM = "whoFrom";
     public static final String SMS_COLUMN_MESSAGE_BODY = "body";
     public static final String SMS_COLUMN_IS_SCHEDULED = "isScheduled";
+    private static final String SMS_COLUMN_THREAD_ID = "threadId";
 
     public SMSDbHelper(Context context) {
         super(context, DATABASE_NAME, null, 1);
@@ -30,8 +31,8 @@ public class SMSDbHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String create = String.format("CREATE TABLE %s (%s INTEGER PRIMARY KEY, %s TEXT, %s TEXT, %s INTEGER)",
-                                SMS_TABLE_NAME, SMS_COLUMN_ID, SMS_COLUMN_FROM, SMS_COLUMN_MESSAGE_BODY, SMS_COLUMN_IS_SCHEDULED);
+        String create = String.format("CREATE TABLE %s (%s INTEGER PRIMARY KEY, %s TEXT, %s TEXT, %s INTEGER, %s INTEGER)",
+                                SMS_TABLE_NAME, SMS_COLUMN_ID, SMS_COLUMN_FROM, SMS_COLUMN_MESSAGE_BODY, SMS_COLUMN_IS_SCHEDULED, SMS_COLUMN_THREAD_ID);
         db.execSQL(create);
     }
 
@@ -42,12 +43,13 @@ public class SMSDbHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public long insertSMS(String from, String body, boolean isScheduled) {
+    public long insertSMS(String from, String body, boolean isScheduled, long threadId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(SMS_COLUMN_FROM, from);
         contentValues.put(SMS_COLUMN_MESSAGE_BODY, body);
         contentValues.put(SMS_COLUMN_IS_SCHEDULED, isScheduled ? 1 : 0);
+        contentValues.put(SMS_COLUMN_THREAD_ID, threadId);
         return db.insert(SMS_TABLE_NAME, null, contentValues);
     }
 
@@ -56,12 +58,13 @@ public class SMSDbHelper extends SQLiteOpenHelper {
         return db.delete(SMS_TABLE_NAME, "id = ? ", new String[]{ Integer.toString(id) });
     }
 
-    public boolean updateSMS(int id, String from, String body, boolean isScheduled) {
+    public boolean updateSMS(int id, String from, String body, boolean isScheduled, long threadId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(SMS_COLUMN_FROM, from);
         contentValues.put(SMS_COLUMN_MESSAGE_BODY, body);
         contentValues.put(SMS_COLUMN_IS_SCHEDULED, isScheduled ? 1 : 0);
+        contentValues.put(SMS_COLUMN_THREAD_ID, threadId);
         db.update(SMS_TABLE_NAME, contentValues, "id = ? ", new String[]{ Integer.toString(id) });
         return true;
     }
@@ -72,7 +75,7 @@ public class SMSDbHelper extends SQLiteOpenHelper {
         String select = String.format("SELECT * FROM %s WHERE %s=%s", SMS_TABLE_NAME, SMS_COLUMN_ID, id);
         Cursor res =  db.rawQuery(select, null);
         res.moveToFirst();
-        mySMSMessage = new MySMSMessage(res.getInt(0), res.getString(1), res.getString(2), res.getInt(3) == 1);
+        mySMSMessage = new MySMSMessage(res.getInt(0), res.getString(1), res.getString(2), res.getInt(3) == 1, res.getLong(4));
         res.close();
         return mySMSMessage;
     }
@@ -88,7 +91,8 @@ public class SMSDbHelper extends SQLiteOpenHelper {
             String from = res.getString(1);
             String body = res.getString(2);
             boolean isScheduled = res.getInt(3) == 1;
-            messages.add(new MySMSMessage(id, from, body, isScheduled));
+            long threadId = res.getLong(4);
+            messages.add(new MySMSMessage(id, from, body, isScheduled, threadId));
             res.moveToNext();
         }
         res.close();

@@ -23,7 +23,6 @@ public class NotificationFactory {
     public static NotificationCompat.Builder getIncomingSMSNotificationBuilder(Context context,
                                                                                int icon,
                                                                                MySMSMessage message) {
-
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context)
                 .setSmallIcon(icon)
                 .setContentTitle(message.getFrom())
@@ -42,17 +41,23 @@ public class NotificationFactory {
         mBuilder.setPriority(Notification.PRIORITY_HIGH);
 
         // Intents
+        Intent contentIntent = new Intent(Intent.ACTION_VIEW);
+        contentIntent.setData(Uri.parse("content://mms-sms/conversations/" + message.getThreadId()));
+
         Intent scheduleIntent = new Intent(context, NotificationService.class);
         scheduleIntent.setAction(NotificationService.ACTION_SCHEDULE_NEW_SMS);
         scheduleIntent.putExtra(NotificationService.EXTRA_WHO_FROM, message.getFrom());
         scheduleIntent.putExtra(NotificationService.EXTRA_MSG_BODY, message.getBody());
         scheduleIntent.putExtra(NotificationService.EXTRA_ALARM_TIME, 10000l);
+        scheduleIntent.putExtra(NotificationService.EXTRA_MSG_THREAD_ID, message.getThreadId());
 
         Intent dismissIntent = new Intent(context, NotificationService.class);
         dismissIntent.setAction(NotificationService.ACTION_SMS_DISMISSED);
         dismissIntent.putExtra(NotificationService.EXTRA_MSG_ID, NotificationService.PSEDUO_MSG_ID_NEW);
 
         // Pending Intents
+        PendingIntent contentPendingIntent =
+                PendingIntent.getActivity(context, (int) System.currentTimeMillis(), contentIntent, 0);
         PendingIntent schedulePendingIntent =
                 PendingIntent.getService(context, (int) System.currentTimeMillis(), scheduleIntent, 0);
         PendingIntent dismissPendingIntent =
@@ -61,7 +66,9 @@ public class NotificationFactory {
         mBuilder.addAction(R.drawable.schedule, "schedule", schedulePendingIntent);
         mBuilder.addAction(R.drawable.dismiss, "dismiss", dismissPendingIntent);
 
+        mBuilder.setContentIntent(contentPendingIntent);
         mBuilder.setDeleteIntent(dismissPendingIntent);
+
         return mBuilder;
     }
 
@@ -87,18 +94,24 @@ public class NotificationFactory {
         mBuilder.setPriority(Notification.PRIORITY_HIGH);
 
         // Intents
+        Intent contentIntent = new Intent(Intent.ACTION_VIEW);
+        contentIntent.setData(Uri.parse("content://mms-sms/conversations/" + message.getThreadId()));
+
         Intent snoozeIntent = new Intent(context, NotificationService.class);
         snoozeIntent.setAction(NotificationService.ACTION_SNOOZE_SMS);
         snoozeIntent.putExtra(NotificationService.EXTRA_WHO_FROM, message.getFrom());
         snoozeIntent.putExtra(NotificationService.EXTRA_MSG_BODY, message.getBody());
         snoozeIntent.putExtra(NotificationService.EXTRA_ALARM_TIME, 10000l);
         snoozeIntent.putExtra(NotificationService.EXTRA_MSG_ID, message.getId());
+        snoozeIntent.putExtra(NotificationService.EXTRA_MSG_THREAD_ID, message.getThreadId());
 
         Intent dismissIntent = new Intent(context, NotificationService.class);
         dismissIntent.setAction(NotificationService.ACTION_SMS_DISMISSED);
         dismissIntent.putExtra(NotificationService.EXTRA_MSG_ID, message.getId());
 
         // Pending Intents
+        PendingIntent contentPendingIntent =
+                PendingIntent.getActivity(context, (int) System.currentTimeMillis(), contentIntent, 0);
         PendingIntent schedulePendingIntent =
                 PendingIntent.getService(context, (int) System.currentTimeMillis(), snoozeIntent, 0);
         PendingIntent dismissPendingIntent =
@@ -107,7 +120,9 @@ public class NotificationFactory {
         mBuilder.addAction(R.drawable.schedule, "snooze", schedulePendingIntent);
         mBuilder.addAction(R.drawable.dismiss, "dismiss", dismissPendingIntent);
 
+        mBuilder.setContentIntent(contentPendingIntent);
         mBuilder.setDeleteIntent(dismissPendingIntent);
+
         return mBuilder;
     }
 }
